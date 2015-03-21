@@ -39,16 +39,20 @@ def baidu keyword, start_record = 1, parser = method(:baidu_default_parser)
 end
 
 def baidu_default_parser html
-    html.search("div.result/h3/a").each do |result|
+    results = html.search("div.result/h3/a").map do |result|
         baidu_short_link = result.attributes['href']
         begin
             site = open(baidu_short_link, {
                 "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0",
             })
-            p site.base_uri.to_s
+            result = site.base_uri.to_s
         rescue => e
-            p baidu_short_link
+            # TODO log error
+            result = baidu_short_link
             next
+        ensure
+            # TODO log ever result in DEBUG mode
+            #p result
         end
     end
 end
@@ -57,16 +61,16 @@ end
 def search obj
     url, parser = obj
 
-    html = nil
+    results = nil
     begin
         html = open(url) {|f| Hpricot(f)} # get html and use Hpricot parsing
-        parser.call html
+        results = parser.call html
     rescue => e
         # nothing to do
     end
 
-    html
+    results
 end
 
 search bing 'hello'
-search baidu 'china'
+p search baidu 'china'
