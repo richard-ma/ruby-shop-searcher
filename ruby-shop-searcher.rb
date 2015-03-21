@@ -7,7 +7,9 @@ require "uri"
 require "logger"
 
 log_file = './runtime.log'
-delay_min, delay_max = [10, 30]
+$delay_min, $delay_max = [10, 30]
+$retry_max = 5
+
 $log = Logger.new(log_file)
 $log.level = Logger::DEBUG
 
@@ -110,11 +112,11 @@ def search resources
 
     retry_time = 0
     last_records_length = records.length
-    while records.length < want_records and retry_time < 10 do
-        sleep_time = rand(delay_min..delay_max)
+    while records.length < want_records and retry_time < $retry_max do
+        sleep_time = rand($delay_min..$delay_max)
         url = request_generator.call(keyword, start_record, records_per_page)
         # log info
-        $log.info("[#{records.length}/#{want_records}:#{retry_time}] [next:#{Time.now + sleep_time}] [#{keyword}] [#{url}]")
+        $log.info("[#{records.length}/#{want_records}] [#{retry_time}/#{$retry_max}] [next:#{Time.now + sleep_time}] [#{keyword}] [#{url}]")
 
         html = open(url, {
                 "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0",
