@@ -85,9 +85,11 @@ def search resources
         url = request_generator.call(keyword, start_record, records_per_page)
         # log request url in DEBUG mode
         $log.debug(url)
+
         html = open(url) {|f| Hpricot(f)} # get html and use Hpricot parsing
         current_records = parser.call(html)
         records = records | current_records.uniq # remove same elements
+
         start_record = start_record + records_per_page
     end
 
@@ -96,7 +98,9 @@ end
 
 #search bing 'hello'
 read_keywords_from(keywords_file).each do |keyword|
-    File.write(result_dir + '/' + keyword + '.sites') do |line|
-        search(baidu(keyword, want_records: 10))
+    File.open(result_dir + '/' + keyword + '.sites', 'w') do |file|
+        search(baidu(keyword, want_records: 10)).map do |record|
+            file.puts record
+        end
     end
 end
