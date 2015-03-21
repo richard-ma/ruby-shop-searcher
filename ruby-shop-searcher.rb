@@ -3,17 +3,22 @@
 require "open-uri"
 require "rubygems"
 require "hpricot"
+require "uri"
+require "logger"
 
 keywords_file = './keywords'
-result_dir = '/tmp/rubyShopSearcher'
+result_dir = './results'
+
+$log = Logger.new(STDERR)
+$log.level = Logger::DEBUG
 
 # Reading keywords
 def read_keywords_from keywords_file
-    keywords = Array.new
+    keywords = nil
 
     open keywords_file do |f|
-        f.each_line do |keyword|
-            keywords << keyword
+        keywords = f.each_line.map do |keyword|
+            keyword.chomp
         end
     end
 
@@ -22,23 +27,33 @@ end
 
 # Search tools
 # Bing
-def bing keyword, start_record = 1, parser = method(:bing_default_parser)
+def bing (keyword, start_record: 1, parser: method(:bing_default_parser))
     ["http://global.bing.com/search?q=#{keyword}+language%3Aen&first=#{start_record}", parser]
 end
 
-def bing_default_parser html
+def bing_default_parser (html)
     html.search("#b_results/li/h2/a").each do |result|
-        p result.attributes['href']
+        $log.debug(result.attributes['href'])
     end
 end
 
 # Baidu
-def baidu keyword, start_record = 1, parser = method(:baidu_default_parser)
-    start_record = start_record / 10
-    ["http://www.baidu.com/s?wd=#{keyword}&pn=#{start_record}", parser]
+def baidu (keyword, want_records: 10, start_record: 0, records_per_page: 20, request_generator: method(:baidu_request_generator), parser: method(:baidu_default_parser))
+    [
+        keyword,
+        want_records,
+        start_record,
+        records_per_page,
+        request_generator,
+        parser,
+    ]
 end
 
-def baidu_default_parser html
+def baidu_request_generator (keyword, start_record, records_per_page)
+    URI.escape("http://www.baidu.com/s?wd=#{keyword}&pn=#{start_record}&rn=#{records_per_page}") # URI escaping
+end
+
+def baidu_default_parser (html)
     results = html.search("div.result/h3/a").map do |result|
         baidu_short_link = result.attributes['href']
         begin
@@ -47,30 +62,41 @@ def baidu_default_parser html
             })
             result = site.base_uri.to_s
         rescue => e
-            # TODO log error
+            # log error
+            $log.error(e)
             result = baidu_short_link
             next
         ensure
-            # TODO log ever result in DEBUG mode
-            #p result
+            # log ever result in DEBUG mode
+            $log.debug(result)
         end
     end
 end
 
 # Search bot engine
-def search obj
-    url, parser = obj
+def search resources
+    keyword, want_records, start_record, records_per_page, request_generator, parser = resources
 
-    results = nil
-    begin
+    records = Array.new
+
+    while records.length < want_records do
+        # log records length in DEBUG mode
+        $log.debug(records.length)
+        url = request_generator.call(keyword, start_record, records_per_page)
+        # log request url in DEBUG mode
+        $log.debug(url)
         html = open(url) {|f| Hpricot(f)} # get html and use Hpricot parsing
-        results = parser.call html
-    rescue => e
-        # nothing to do
+        current_records = parser.call(html)
+        records = records | current_records.uniq # remove same elements
+        start_record = start_record + records_per_page
     end
 
-    results
+    records[0, want_records]
 end
 
-search bing 'hello'
-p search baidu 'china'
+#search bing 'hello'
+read_keywords_from(keywords_file).each do |keyword|
+    File.write(result_dir + '/' + keyword + '.sites') do |line|
+        search(baidu(keyword, want_records: 10))
+    end
+end
