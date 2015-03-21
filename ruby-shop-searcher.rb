@@ -7,7 +7,7 @@ require "uri"
 require "logger"
 
 keywords_file = './keywords'
-result_dir = './results'
+result_dir = './sites'
 
 $log = Logger.new(STDERR)
 $log.level = Logger::DEBUG
@@ -54,6 +54,7 @@ def baidu_request_generator (keyword, start_record, records_per_page)
 end
 
 def baidu_default_parser (html)
+    html = Hpricot::new(html) # Use hpricot parsing HTML
     results = html.search("div.result/h3/a").map do |result|
         baidu_short_link = result.attributes['href']
         begin
@@ -73,6 +74,35 @@ def baidu_default_parser (html)
     end
 end
 
+# GFsoso (Google)
+def gfsoso (keyword, want_records: 10, start_record: 0, records_per_page: 10, request_generator: method(:gfsoso_request_generator), parser: method(:gfsoso_default_parser))
+    records_per_page = 10 # cann't change records per page
+
+    [
+        keyword,
+        want_records,
+        start_record,
+        records_per_page,
+        request_generator,
+        parser,
+    ]
+end
+
+def gfsoso_request_generator (keyword, start_record, records_per_page)
+    URI.escape("http://www.gfsoso.com/?q=#{keyword}&filter=null&src=google&nfpr=0&lr=en&pn=#{start_record}") # URI escaping
+end
+
+def gfsoso_default_parser (html)
+    links = html.scan(/\<span class=\\"st\\" style=\\"word\-break:break-all;font-family:Arial;\\"\>\s\s\s\s(\S*)\s\s\s\<\\\/span\>/)
+
+    records = Array.new
+    links.each do |link|
+        records << link.first.gsub('\\', '').gsub(/\/.*$/, '').gsub(/^/, 'http://')
+    end
+
+    records
+end
+
 # Search bot engine
 def search resources
     keyword, want_records, start_record, records_per_page, request_generator, parser = resources
@@ -86,7 +116,10 @@ def search resources
         # log request url in DEBUG mode
         $log.debug(url)
 
-        html = open(url) {|f| Hpricot(f)} # get html and use Hpricot parsing
+        html = open(url, {
+                "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0",
+                "Cookie" =>  "_GFTOKEN=e6aef733c8b5ed6b9df57480",
+            }) { |f| f.read }
         current_records = parser.call(html)
         records = records | current_records.uniq # remove same elements
 
@@ -99,7 +132,7 @@ end
 #search bing 'hello'
 read_keywords_from(keywords_file).each do |keyword|
     File.open(result_dir + '/' + keyword + '.sites', 'w') do |file|
-        search(baidu(keyword, want_records: 10)).map do |record|
+        search(gfsoso(keyword, want_records: 10000)).map do |record|
             file.puts record
         end
     end
