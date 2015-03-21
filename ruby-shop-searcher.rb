@@ -6,10 +6,8 @@ require "hpricot"
 require "uri"
 require "logger"
 
-keywords_file = './keywords'
-result_dir = './sites'
-
-$log = Logger.new(STDERR)
+log_file = './runtime.log'
+$log = Logger.new(log_file)
 $log.level = Logger::DEBUG
 
 # Reading keywords
@@ -109,9 +107,11 @@ def search resources
 
     records = Array.new
 
-    while records.length < want_records do
+    retry_time = 0
+    last_records_length = records.length
+    while records.length < want_records and retry_time < 10 do
         # log records length in DEBUG mode
-        $log.debug(records.length)
+        $log.debug("records.length:#{records.length} retry_time:#{retry_time}")
         url = request_generator.call(keyword, start_record, records_per_page)
         # log request url in DEBUG mode
         $log.debug(url)
@@ -124,16 +124,32 @@ def search resources
         records = records | current_records.uniq # remove same elements
 
         start_record = start_record + records_per_page
+
+        if last_records_length == records.length
+            retry_time = retry_time + 1
+        else
+            retry_time = 0
+        end
+        last_records_length = records.length
     end
 
     records[0, want_records]
 end
 
-#search bing 'hello'
-read_keywords_from(keywords_file).each do |keyword|
-    File.open(result_dir + '/' + keyword + '.sites', 'w') do |file|
-        search(gfsoso(keyword, want_records: 10000)).map do |record|
-            file.puts record
+def main
+    keywords_file = './keywords'
+    result_dir = './sites'
+
+    # Use gfsoso
+    read_keywords_from(keywords_file).each do |keyword|
+        File.open(result_dir + '/' + keyword + '.sites', 'w') do |file|
+            search(gfsoso(keyword, want_records: 10000)).map do |record|
+                file.puts record
+            end
         end
     end
 end
+
+main
+
+#search bing 'hello'
