@@ -20,21 +20,21 @@ end
 
 # Search tools
 # Bing
-def bing keyword, start_record = 1, parser = method(:bing_parser)
+def bing keyword, start_record = 1, parser = method(:bing_default_parser)
     ["http://global.bing.com/search?q=#{keyword}&first=#{start_record}", parser]
 end
 
-def bing_parser html
+def bing_default_parser html
     p 'bing_parser'
 end
 
 # Baidu
-def baidu keyword, start_record = 1, parser = method(:baidu_parser)
+def baidu keyword, start_record = 1, parser = method(:baidu_default_parser)
     start_record = start_record / 10
     ["http://www.baidu.com/s?wd=#{keyword}&pn=#{start_record}", parser]
 end
 
-def baidu_parser html
+def baidu_default_parser html
     p 'baidu_parser'
 end
 
