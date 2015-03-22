@@ -40,6 +40,8 @@ end
 
 # Baidu
 def baidu (keyword, want_records: 10, start_record: 0, records_per_page: 20, request_generator: method(:baidu_request_generator), parser: method(:baidu_default_parser))
+    cookie = nil
+
     [
         keyword,
         want_records,
@@ -47,6 +49,7 @@ def baidu (keyword, want_records: 10, start_record: 0, records_per_page: 20, req
         records_per_page,
         request_generator,
         parser,
+        cookie,
     ]
 end
 
@@ -78,6 +81,19 @@ end
 # GFsoso (Google)
 def gfsoso (keyword, want_records: 10, start_record: 0, records_per_page: 10, request_generator: method(:gfsoso_request_generator), parser: method(:gfsoso_default_parser))
     records_per_page = 10 # cann't change records per page
+    gftoken = [
+        '44177aba627677a9ae2229e4',
+        '7da2af024834ef4ffc2913de',
+        'ec41a49182cd09c89ad26ed6',
+        '7b0ce4cea59a5b2e25885432',
+        'e8217d6d5e5867ee4c111822',
+        '86abfa447f6f5bba838a352e',
+        'd26fd59e7af81c5bd69b4a26',
+        'bc719e0b7ae601e294f93c78',
+        '07204593c2161adbb8fab438',
+        '2c750a126213e253c0e3d870',
+    ]
+    cookie = "AJSTAT_ok_pages=1; AJSTAT_ok_times=1; _GFTOKEN=#{gftoken[rand(0..gftoken.length-1)]}"
 
     [
         keyword,
@@ -86,6 +102,7 @@ def gfsoso (keyword, want_records: 10, start_record: 0, records_per_page: 10, re
         records_per_page,
         request_generator,
         parser,
+        cookie,
     ]
 end
 
@@ -106,7 +123,7 @@ end
 
 # Search bot engine
 def search resources
-    keyword, want_records, start_record, records_per_page, request_generator, parser = resources
+    keyword, want_records, start_record, records_per_page, request_generator, parser, cookie = resources
 
     records = Array.new
 
@@ -120,7 +137,7 @@ def search resources
 
         html = open(url, {
                 "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0",
-                "Cookie" =>  "_GFTOKEN=e6aef733c8b5ed6b9df57480",
+                "Cookie" => cookie
             }) { |f| f.read }
         current_records = parser.call(html)
         records = records | current_records.uniq # remove same elements
@@ -148,7 +165,7 @@ def main
     # Use gfsoso
     read_keywords_from(keywords_file).each do |keyword|
         File.open(result_dir + '/' + keyword + '.sites', 'w') do |file|
-            search(gfsoso(keyword, want_records: 10000)).map do |record|
+            search(gfsoso(keyword, want_records: 200)).map do |record|
                 file.puts record
             end
         end
