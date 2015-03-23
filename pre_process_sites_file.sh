@@ -3,7 +3,7 @@
 tempfile=/tmp/sites-temp-file
 
 SAVEIFS=$IFS
-IFS=$"\n"
+IFS='\n'
 
 if [ $# -ne 1 ]; then
     echo "Please input a directory path"
