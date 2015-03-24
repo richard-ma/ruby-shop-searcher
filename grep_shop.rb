@@ -2,6 +2,8 @@
 
 require "open-uri"
 
+$dropped_sites_file = 'dropped_sites'
+
 def usage
     puts "Please input a checked sites file name"
     puts "File name must ended with .sites.checked"
@@ -13,17 +15,22 @@ def check_filename(file_name)
 end
 
 def load_dropped_sites
-    dropped_sites_file = 'dropped_sites'
-
-    f = open(dropped_sites_file)
+    f = open($dropped_sites_file)
     f.each_line.map do |site|
         site.chomp
     end
 end
 
 def write_dropped_sites(dropped_sites_delta)
-    f = open(dropped_sites_file, 'a')
+    f = open($dropped_sites_file, 'a')
     dropped_sites_delta.each do |site|
+        f.puts site
+    end
+end
+
+def write_accepted_sites(accepted_sites)
+    f = open($accepted_sites_file, 'a')
+    accepted_sites .each do |site|
         f.puts site
     end
 end
@@ -82,6 +89,8 @@ def main
 
     # update dropped site file
     write_dropped_sites(dropped_sites_delta) if not dropped_sites_delta.empty?
+    p accepted_sites
+    write_accepted_sites(accepted_sites) if not accepted_sites.empty?
 end
 
 # run!!!
