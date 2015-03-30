@@ -3,6 +3,7 @@
 require "open-uri"
 
 $dropped_sites_file = 'dropped_sites'
+$accepted_sites_file = 'accepted_sites'
 
 def usage
     puts "Please input a checked sites file name"
@@ -65,7 +66,9 @@ def main
                 accepted_flg = false # site can be accepted? init to false
                 # check site accessable
                 begin
-                    html = open(site) { |f| f.read }
+                    p "--DEBUGGING: #{site}"
+                    html = open(site, :read_timeout => 3) { |f| f.read }
+                    p ">>DEBUGGING: #{site}"
                     # check rules
                     accepted_flg = true if /cart|basket|ecshop/ =~ html
                 rescue => e
