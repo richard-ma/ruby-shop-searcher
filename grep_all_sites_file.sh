@@ -13,6 +13,12 @@ files=$1/*.sites.checked
 for file in $files; do
     echo "$file starting."
     ./grep_shop.rb $file
+
+    # remove processed file
+    if [ $? = '0' ]; then
+        rm $file
+    fi
+
     echo "$file completed."
 done
 
