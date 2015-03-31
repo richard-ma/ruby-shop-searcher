@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 tempfile=/tmp/sites-temp-file
 
@@ -17,7 +17,7 @@ for file in $files; do
     sort "$file" | uniq > "$tempfile"
 
     # move back
-    rm "$file"
+    file=${file// /-}
     mv "$tempfile" "$file.checked"
 
     echo "$file completed."

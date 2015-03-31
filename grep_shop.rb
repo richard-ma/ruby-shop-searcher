@@ -52,8 +52,8 @@ def main
     # check command line arguments
     usage if not ARGV.length == 1
 
-    $log.info "--Starting: #{ARGV[0]}"
     checked_sites_file = ARGV[0] # ruby command line argument start with 0!!!
+    $log.info "--Starting: #{checked_sites_file}"
     usage if not check_filename(checked_sites_file)
     # show file name OK DEBUG mode
     $log.debug "file name check OK"

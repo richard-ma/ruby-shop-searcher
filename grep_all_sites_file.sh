@@ -1,7 +1,4 @@
-#!/bin/sh
-
-SAVEIFS=$IFS
-IFS='\n'
+#!/bin/bash
 
 if [ $# -ne 1 ]; then
     echo "Please input a directory path"
@@ -14,14 +11,13 @@ for file in $files; do
     echo "$file starting."
     ./grep_shop.rb $file
 
-    # remove processed file
+    #remove processed file
     if [ $? = '0' ]; then
         rm $file
+        echo "remove $file"
     fi
 
     echo "$file completed."
 done
-
-IFS=$SAVEIFS
 
 echo "All files completed."
