@@ -1,9 +1,15 @@
 #!/usr/bin/env ruby
 
 require "open-uri"
+require "logger"
 
 $dropped_sites_file = 'dropped_sites'
 $accepted_sites_file = 'accepted_sites'
+
+log_file = './grep.log'
+$log = Logger.new(log_file)
+$log.level = Logger::DEBUG
+
 
 def usage
     puts "Please input a checked sites file name"
@@ -23,6 +29,7 @@ def load_dropped_sites
 end
 
 def write_dropped_sites(dropped_sites_delta)
+    $log.info "Writting dropped sites"
     f = open($dropped_sites_file, 'a')
     dropped_sites_delta.each do |site|
         f.puts site
@@ -30,6 +37,7 @@ def write_dropped_sites(dropped_sites_delta)
 end
 
 def write_accepted_sites(accepted_sites)
+    $log.info "Writting accepted sites"
     f = open($accepted_sites_file, 'a')
     accepted_sites .each do |site|
         f.puts site
@@ -37,28 +45,30 @@ def write_accepted_sites(accepted_sites)
 end
 
 def log_dropped_site(site)
-    puts "logging dropped sites: #{site}"
+    $log.info "Dropped: #{site}"
 end
 
 def main
     # check command line arguments
     usage if not ARGV.length == 1
 
+    $log.info "--Starting: #{ARGV[0]}"
     checked_sites_file = ARGV[0] # ruby command line argument start with 0!!!
     usage if not check_filename(checked_sites_file)
     # show file name OK DEBUG mode
-    p 'file name check OK'
+    $log.debug "file name check OK"
 
     dropped_sites = load_dropped_sites
     dropped_sites_delta = []
     accepted_sites = []
     # show dropped sites loaded DEBUG mode
-    p "dropped_sites loaded [#{dropped_sites.length}]"
+    $log.debug "dropped_sites loaded [#{dropped_sites.length}]"
 
     # open a checked sites file
     open(checked_sites_file) do |file|
         file.each_line do |site|
             site = site.chomp
+            $log.info "Processing: #{site}"
 
             if dropped_sites.include?(site)
                 log_dropped_site(site)
@@ -66,24 +76,21 @@ def main
                 accepted_flg = false # site can be accepted? init to false
                 # check site accessable
                 begin
-                    p "--DEBUGGING: #{site}"
-                    html = open(site, :read_timeout => 3) { |f| f.read }
-                    p ">>DEBUGGING: #{site}"
+                    html = open(site, :read_timeout => 20) { |f| f.read }
                     # check rules
-                    accepted_flg = true if /cart|basket|ecshop/ =~ html
+                    accepted_flg = true if /ecshop/ =~ html
                 rescue => e
-                    puts "#{site} Error: #{e}"
-                    # log open error
+                    $log.error "#{site} Error: #{e}"
                 ensure
                     # add to dropped sites
                     if accepted_flg == false
                         dropped_sites << site 
                         dropped_sites_delta << site
-                    end
-                    if accepted_flg == true
+                        $log.info "Append dropped: #{site}"
+                    else #accepted_flg == true
                         accepted_sites << site
                         # logging accept site
-                        p "Accepted site: #{site}"
+                        $log.info "Accepted: #{site}"
                     end
                 end
             end
@@ -92,8 +99,9 @@ def main
 
     # update dropped site file
     write_dropped_sites(dropped_sites_delta) if not dropped_sites_delta.empty?
-    p accepted_sites
     write_accepted_sites(accepted_sites) if not accepted_sites.empty?
+
+    $log.info "--Ending: #{ARGV[0]}"
 end
 
 # run!!!
