@@ -151,7 +151,7 @@ def search resources
         proxy = proxies.sample
         
         # log info
-        $log.info("[#{records.length}/#{want_records}] [#{retry_time}/#{$retry_max}] [next:#{Time.now + sleep_time}] [#{keyword}] [#{url}]")
+        $log.info("[#{records.length}/#{want_records}] [#{retry_time}/#{$retry_max}] [proxy:#{proxy}] [#{keyword}] [#{url}]")
 
         html = open(url, {
                 "proxy" => proxies.sample, 
