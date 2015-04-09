@@ -7,7 +7,7 @@ require "uri"
 require "logger"
 
 log_file = './runtime.log'
-$delay_min, $delay_max = [10, 30]
+$delay_min, $delay_max = [1, 3]
 $retry_max = 5
 
 $log = Logger.new(log_file)
@@ -15,7 +15,7 @@ $log.level = Logger::DEBUG
 
 # Reading keywords
 def read_keywords_from keywords_file
-    keywords = nil
+    keywords = Array.new
 
     open keywords_file do |f|
         keywords = f.each_line.map do |keyword|
@@ -24,6 +24,20 @@ def read_keywords_from keywords_file
     end
 
     keywords
+end
+
+# Reading keywords
+def read_proxies
+    proxies_file = './proxy_list'
+    proxies = Array.new
+
+    open proxies_file do |f|
+        proxies = f.each_line.map do |proxy|
+            proxy.chomp
+        end
+    end
+
+    proxies
 end
 
 # Search tools
@@ -94,6 +108,7 @@ def gfsoso (keyword, want_records: 10, start_record: 0, records_per_page: 10, re
         '2c750a126213e253c0e3d870',
     ]
     cookie = "AJSTAT_ok_pages=1; AJSTAT_ok_times=1; _GFTOKEN=#{gftoken[rand(0..gftoken.length-1)]}"
+    proxies = read_proxies
 
     [
         keyword,
@@ -125,6 +140,7 @@ end
 def search resources
     keyword, want_records, start_record, records_per_page, request_generator, parser, cookie = resources
 
+    proxies = read_proxies
     records = Array.new
 
     retry_time = 0
@@ -132,12 +148,15 @@ def search resources
     while records.length < want_records and retry_time < $retry_max do
         sleep_time = rand($delay_min..$delay_max)
         url = request_generator.call(keyword, start_record, records_per_page)
+        proxy = proxies.sample
+        
         # log info
         $log.info("[#{records.length}/#{want_records}] [#{retry_time}/#{$retry_max}] [next:#{Time.now + sleep_time}] [#{keyword}] [#{url}]")
 
         html = open(url, {
+                "proxy" => proxies.sample, 
                 "User-Agent" => "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0",
-                "Cookie" => cookie
+                "Cookie" => cookie,
             }) { |f| f.read }
         current_records = parser.call(html)
         records = records | current_records.uniq # remove same elements
