@@ -78,7 +78,7 @@ def main
                 begin
                     html = open(site, :read_timeout => 20) { |f| f.read }
                     # check rules
-                    accepted_flg = true if /ecshop/ =~ html
+                    accepted_flg = true if /privacy/ =~ html
                 rescue => e
                     $log.error "#{site} Error: #{e}"
                 ensure
