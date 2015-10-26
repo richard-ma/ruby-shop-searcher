@@ -61,12 +61,7 @@ def bing_request_generator (keyword, start_record, records_per_page)
 end
 
 def bing_default_parser (html)
-    records = Array.new
-    records = [html]
-
-    #html.search("#b_results/li/h2/a").each do |result|
-        #$log.debug(result.attributes['href'])
-    #end
+    records = html.scan(/\<h2><a href=\"([^"]*)\" target/)
 
     records
 end
@@ -201,16 +196,16 @@ def main
     keywords_file = './keywords'
     result_dir = './sites'
 
-    # Use gfsoso
+    # Use bing
     read_keywords_from(keywords_file).each do |keyword|
         File.open(result_dir + '/' + keyword + '.sites', 'w') do |file|
-            search(gfsoso(keyword, want_records: 200)).map do |record|
+            search(bing(keyword, want_records: 200)).map do |record|
                 file.puts record
             end
         end
     end
 end
 
-#main
+main
 
-puts search bing 'hello'
+#search bing 'hello'
