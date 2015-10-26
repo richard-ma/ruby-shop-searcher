@@ -1,5 +1,5 @@
 GEM
-  remote: http://ruby.taobao.org/
+  remote: https://ruby.taobao.org/
   specs:
     hpricot (0.8.6)
 
@@ -8,3 +8,6 @@ PLATFORMS
 
 DEPENDENCIES
   hpricot
+
+BUNDLED WITH
+   1.10.6
